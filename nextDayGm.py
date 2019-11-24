@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import sqlite3
 import datetime as dt
+import config
 
 TodayDt = dt.date.today().strftime("%Y-%m-%d")
 
-con = sqlite3.connect("C:/Users/skyle/Documents/sqlite3_NHL2019.db")
+con = sqlite3.connect(config.dbpath)
 con.isolation_level = None
 cur = con.cursor()
 

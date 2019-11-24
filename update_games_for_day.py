@@ -3,8 +3,9 @@ import sqlite3
 import sys
 import json
 import urllib.request
+import config
 
-con=sqlite3.connect("C:/Users/skyle/Documents/sqlite3_NHL2019.db")
+con=sqlite3.connect(config.dbpath)
 con.isolation_level = None
 cur=con.cursor()
 
