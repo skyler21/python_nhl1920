@@ -1,26 +1,33 @@
 #!/usr/bin/env python
-import sqlite3
 import datetime as dt
+import sqlite3
+import config
+import barChartf
+
 
 TodayDt = dt.date.today().strftime("%Y-%m-%d")
 
-con = sqlite3.connect("C:/Users/skyle/Documents/sqlite3_NHL2019.db")
+con = sqlite3.connect(config.dbpath)
 con.isolation_level = None
 cur = con.cursor()
 
 # get todays games + standings
 print(TodayDt)
 params: str = TodayDt
-cur.execute("select GMDATE, GMTIME, VTMID, HTMID, VTMABBR, HTMABBR from hckysched where GMDATE = ? order by GMTIME", [params])
+cur.execute("select GMDATE, GMTIME, VTMID, HTMID, VTMABBR, HTMABBR from hckysched where GMDATE = ? order by GMTIME",
+            [params])
 
 result = cur.fetchall()
 
 for index, dat in enumerate(result):
     away_name = dat[4]
     home_name = dat[5]
-    print('  '  + dat[0] + '  ' + dat[1] + '       ' + '{0: <15}'.format(away_name) + '                                ' + '{0: <15}'.format(home_name))
+    print('  ' + dat[0] + '  ' + dat[1] + '       ' + '{0: <15}'.format(
+        away_name) + '                                ' + '{0: <15}'.format(home_name))
     params = (dat[2])
-    cur.execute("select std_wins, std_loss, std_otl, std_totpoints, std_vwins, std_vloss, std_votl, std_vgms, std_vgoalfor, std_vgoalagnst, std_vsogfor, std_vsogagnst from hckystand where std_id = ?", [params])
+    cur.execute(
+        "select std_wins, std_loss, std_otl, std_totpoints, std_vwins, std_vloss, std_votl, std_vgms, std_vgoalfor, std_vgoalagnst, std_vsogfor, std_vsogagnst from hckystand where std_id = ?",
+        [params])
     visit_result = cur.fetchall()
 
     v_goalsforpergame = 0
@@ -53,8 +60,38 @@ for index, dat in enumerate(result):
             v_sogforpergame = (float(v_dat[10]) / float(v_dat[7]))
             v_sogagnstpergame = (float(v_dat[11]) / float(v_dat[7]))
 
+    params = (away_name)
+    cur.execute("select vtmscore, count(*) from hckysched where vtmabbr = ? and GMDONEIND = 'Y' group by vtmscore",
+                [params])
+    visitGoalResult = cur.fetchall()
+
+    visitGoalOut = []
+    for i in range(10):
+        if visitGoalResult and i == visitGoalResult[0][0]:
+            visitGoalOut.append(visitGoalResult.pop(0))
+        else:
+            visitGoalOut.append((i, 0))
+
+    print(away_name + "    Goals/# of times  " + str(visitGoalOut))
+
+    params = (away_name)
+    cur.execute("select htmscore, count(*) from hckysched where vtmabbr = ? and GMDONEIND = 'Y' group by htmscore",
+                [params])
+    visitAgnstResult = cur.fetchall()
+
+    visitAgnstOut = []
+    for i in range(10):
+        if visitAgnstResult and i == visitAgnstResult[0][0]:
+            visitAgnstOut.append(visitAgnstResult.pop(0))
+        else:
+            visitAgnstOut.append((i, 0))
+
+    print(away_name + "  Against/# of times  " + str(visitAgnstOut))
+
     params = (dat[3])
-    cur.execute("select std_wins, std_loss, std_otl, std_totpoints, std_hwins, std_hloss, std_hotl, std_hgms, std_hgoalfor, std_hgoalagnst, std_hsogfor, std_hsogagnst from hckystand where std_id = ?", [params])
+    cur.execute(
+        "select std_wins, std_loss, std_otl, std_totpoints, std_hwins, std_hloss, std_hotl, std_hgms, std_hgoalfor, std_hgoalagnst, std_hsogfor, std_hsogagnst from hckystand where std_id = ?",
+        [params])
 
     home_result = cur.fetchall()
     for h_index, h_dat in enumerate(home_result):
@@ -78,14 +115,41 @@ for index, dat in enumerate(result):
             h_sogforpergame = (float(h_dat[10]) / float(h_dat[7]))
             h_sogagnstpergame = (float(h_dat[11]) / float(h_dat[7]))
 
-        v_GTOTAL = (float(v_goalsforpergame) + float(v_goalsagnstpergame))/2
-        h_GTOTAL = (float(h_goalsforpergame) + float(h_goalsagnstpergame))/2
+        params = (home_name)
+        cur.execute("select htmscore, count(*) from hckysched where htmabbr = ? and GMDONEIND = 'Y' group by htmscore",
+                    [params])
+        homeGoalResult = cur.fetchall()
+
+        homeGoalOut = []
+        for i in range(10):
+            if homeGoalResult and i == homeGoalResult[0][0]:
+                homeGoalOut.append(homeGoalResult.pop(0))
+            else:
+                homeGoalOut.append((i, 0))
+
+        print(home_name + "    Goals/# of times  " + str(homeGoalOut))
+
+        params = (home_name)
+        cur.execute("select vtmscore, count(*) from hckysched where htmabbr = ? and GMDONEIND = 'Y' group by vtmscore",
+                    [params])
+        homeAgnstResult = cur.fetchall()
+
+        homeAgnstOut = []
+        for i in range(10):
+            if homeAgnstResult and i == homeAgnstResult[0][0]:
+                homeAgnstOut.append(homeAgnstResult.pop(0))
+            else:
+                homeAgnstOut.append((i, 0))
+
+        print(home_name + "  Against/# of times  " + str(homeAgnstOut))
+
+        v_GTOTAL = (float(v_goalsforpergame) + float(v_goalsagnstpergame)) / 2
+        h_GTOTAL = (float(h_goalsforpergame) + float(h_goalsagnstpergame)) / 2
         TOTGOALS = (float(v_GTOTAL) + float(h_GTOTAL))
 
-        v_SOGTOTAL = (float(v_sogforpergame) + float(v_sogagnstpergame))/2
-        h_SOGTOTAL = (float(h_sogforpergame) + float(h_sogagnstpergame))/2
+        v_SOGTOTAL = (float(v_sogforpergame) + float(v_sogagnstpergame)) / 2
+        h_SOGTOTAL = (float(h_sogforpergame) + float(h_sogagnstpergame)) / 2
         TOTSOGS = (float(v_SOGTOTAL) + float(h_SOGTOTAL))
-
 
     if v_points > h_points:
         points_ldr = away_name
@@ -93,7 +157,11 @@ for index, dat in enumerate(result):
         points_ldr = home_name
     if v_points == h_points:
         points_ldr = '   ** TIE **'
-    print('                           W/L/OTL/Pnts                 ' + '{0: >2}'.format(str(v_twins)) + '/' + '{0: >3}'.format(str(v_tlosses)) + '/' + '{0: >3}'.format(str(v_totl)) + '/' + '{0: >3}'.format(str(v_points)) +  '       W/L/OTL/Pnts                ' + '{0: >3}'.format(str(h_twins)) + '/' + '{0: >3}'.format(str(h_tlosses)) + '/' + '{0: >3}'.format(str(h_totl)) + '/' + '{0: >3}'.format(str(h_points)) + '                ' + str(points_ldr))
+    print('                           W/L/OTL/Pnts                 ' + '{0: >2}'.format(
+        str(v_twins)) + '/' + '{0: >3}'.format(str(v_tlosses)) + '/' + '{0: >3}'.format(
+        str(v_totl)) + '/' + '{0: >3}'.format(str(v_points)) + '       W/L/OTL/Pnts                ' + '{0: >3}'.format(
+        str(h_twins)) + '/' + '{0: >3}'.format(str(h_tlosses)) + '/' + '{0: >3}'.format(
+        str(h_totl)) + '/' + '{0: >3}'.format(str(h_points)) + '                ' + str(points_ldr))
 
     if v_percent > h_percent:
         percent_ldr = away_name
@@ -101,7 +169,11 @@ for index, dat in enumerate(result):
         percent_ldr = home_name
     if v_percent == h_percent:
         percent_ldr = '   ** TIE **'
-    print('                           Visitor W/L/OTL     ' + '{0: >3}'.format(str(v_wins)) + '/' + '{0: >3}'.format(str(v_losses)) + '/' + '{0: >3}'.format(str(v_otl)) + '  ' + '{:8.4f}'.format(v_percent) + ' %' + '       Home W/L/OTL        ' + '{0: >3}'.format(str(h_wins)) + '/' + '{0: >3}'.format(str(h_losses)) + '/' + '{0: >3}'.format(str(h_otl)) + '  ' + '{:8.4f}'.format(h_percent) + ' %'  + '                ' + str(percent_ldr))
+    print('                           Visitor W/L/OTL     ' + '{0: >3}'.format(str(v_wins)) + '/' + '{0: >3}'.format(
+        str(v_losses)) + '/' + '{0: >3}'.format(str(v_otl)) + '  ' + '{:8.4f}'.format(
+        v_percent) + ' %' + '       Home W/L/OTL        ' + '{0: >3}'.format(str(h_wins)) + '/' + '{0: >3}'.format(
+        str(h_losses)) + '/' + '{0: >3}'.format(str(h_otl)) + '  ' + '{:8.4f}'.format(
+        h_percent) + ' %' + '                ' + str(percent_ldr))
 
     if v_goalsforpergame > h_goalsforpergame:
         goalsfor_ldr = away_name
@@ -109,7 +181,9 @@ for index, dat in enumerate(result):
         goalsfor_ldr = home_name
     if v_goalsforpergame == h_goalsforpergame:
         goalsfor_ldr = '   ** TIE **'
-    print('                           Visit Goals For/Game        ' + '{:6.2f}'.format(v_goalsforpergame) +  '                Home Goals For/Game          ' + '{:6.2f}'.format(h_goalsforpergame)  + '                        ' + str(goalsfor_ldr))
+    print('                           Visit Goals For/Game        ' + '{:6.2f}'.format(
+        v_goalsforpergame) + '                Home Goals For/Game          ' + '{:6.2f}'.format(
+        h_goalsforpergame) + '                        ' + str(goalsfor_ldr))
 
     if v_goalsagnstpergame < h_goalsagnstpergame:
         goalsagnst_ldr = away_name
@@ -117,8 +191,12 @@ for index, dat in enumerate(result):
         goalsagnst_ldr = home_name
     if v_goalsagnstpergame == h_goalsagnstpergame:
         goalsagnst_ldr = '   ** TIE **'
-    print('                           Visit Goals Against/Game    ' + '{:6.2f}'.format(v_goalsagnstpergame) + '                Home Goals Against/Game      ' + '{:6.2f}'.format(h_goalsagnstpergame)  + '                        ' + str(goalsagnst_ldr))
-    print('                           Visit Goals TOTAL GOALS     ' + '{:6.2f}'.format(v_GTOTAL) + '                Home TOTAL GOALS             ' + '{:6.2f}'.format(h_GTOTAL) + '                  TOTAL GOALS  ' + '{:6.2f}'.format(TOTGOALS))
+    print('                           Visit Goals Against/Game    ' + '{:6.2f}'.format(
+        v_goalsagnstpergame) + '                Home Goals Against/Game      ' + '{:6.2f}'.format(
+        h_goalsagnstpergame) + '                        ' + str(goalsagnst_ldr))
+    print('                           Visit Goals TOTAL GOALS     ' + '{:6.2f}'.format(
+        v_GTOTAL) + '                Home TOTAL GOALS             ' + '{:6.2f}'.format(
+        h_GTOTAL) + '                  TOTAL GOALS  ' + '{:6.2f}'.format(TOTGOALS))
 
     if v_sogforpergame > h_sogforpergame:
         sogfor_ldr = away_name
@@ -126,7 +204,9 @@ for index, dat in enumerate(result):
         sogfor_ldr = home_name
     if v_sogforpergame == h_sogforpergame:
         sogfor_ldr = '   ** TIE **'
-    print('                           Visit SOGs For/Game         ' + '{:6.2f}'.format(v_sogforpergame) +  '                Home SOGs For/Game           ' + '{:6.2f}'.format(h_sogforpergame)  + '                        ' + str(sogfor_ldr))
+    print('                           Visit SOGs For/Game         ' + '{:6.2f}'.format(
+        v_sogforpergame) + '                Home SOGs For/Game           ' + '{:6.2f}'.format(
+        h_sogforpergame) + '                        ' + str(sogfor_ldr))
 
     if v_sogagnstpergame < h_sogagnstpergame:
         sogagnst_ldr = away_name
@@ -134,6 +214,24 @@ for index, dat in enumerate(result):
         sogagnst_ldr = home_name
     if v_sogagnstpergame == h_sogagnstpergame:
         sogagnst_ldr = '   ** TIE **'
-    print('                           Visit SOGs Against/Game     ' + '{:6.2f}'.format(v_sogagnstpergame) + '                Home SOGs Against/Game       ' + '{:6.2f}'.format(h_sogagnstpergame)  + '                        ' + str(sogagnst_ldr))
-    print('                           Visit TOTAL SOGs            ' + '{:6.2f}'.format(v_SOGTOTAL) + '                Home TOTAL SOGs              ' + '{:6.2f}'.format(h_SOGTOTAL) + '                  TOTAL SOGs   ' + '{:6.2f}'.format(TOTSOGS))
+    print('                           Visit SOGs Against/Game     ' + '{:6.2f}'.format(
+        v_sogagnstpergame) + '                Home SOGs Against/Game       ' + '{:6.2f}'.format(
+        h_sogagnstpergame) + '                        ' + str(sogagnst_ldr))
+    print('                           Visit TOTAL SOGs            ' + '{:6.2f}'.format(
+        v_SOGTOTAL) + '                Home TOTAL SOGs              ' + '{:6.2f}'.format(
+        h_SOGTOTAL) + '                  TOTAL SOGs   ' + '{:6.2f}'.format(TOTSOGS))
     print(' ')
+
+    homeGoalChart = []
+    visitGoalChart = []
+    homeAgnstChart = []
+    visitAgnstChart = []
+
+    for i in range(10):
+        homeGoalChart.append(homeGoalOut[i][1])
+        visitGoalChart.append(visitGoalOut[i][1])
+        homeAgnstChart.append(homeAgnstOut[i][1])
+        visitAgnstChart.append(visitAgnstOut[i][1])
+    ###print (homeGoalChart)
+
+    barChartf.chart(10, away_name, visitGoalChart, visitAgnstChart, home_name, homeGoalChart, homeAgnstChart)

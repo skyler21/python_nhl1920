@@ -1,17 +1,13 @@
 import csv
 import sqlite3
 import datetime as dt
+import config
+
 fieldnames = ("D_YR", "D_DVNUM", "D_DVNAME", "D_DVCONF", "D_TMID", "D_TMNAME")
 
 TodayDt = dt.date.today().strftime("%Y%m%d")
 
-import csv
-import sqlite3
-import datetime as dt
-
-TodayDt = dt.date.today().strftime("%Y%m%d")
-
-con=sqlite3.connect("c:/users/skyle/documents/sqlite3_NHL2019.db")
+con=sqlite3.connect(config.dbpath)
 con.isolation_level = None
 cur=con.cursor()
 

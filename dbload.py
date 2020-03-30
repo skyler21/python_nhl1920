@@ -7,13 +7,14 @@ import urllib.request
 import sqlite3
 import datetime as dt
 import calendar
+import config
 
 fieldnames = ("IN_GmDate", "IN_VTM", "IN_VNN", "IN_VSCR", "IN_HTM", "IN_HNN", "IN_HSCR", "IN_OTSO_IND", "FLD9")
 
 TodayDt = dt.date.today().strftime("%Y%m%d")
 var_year = 2019
 
-con=sqlite3.connect("C:/Users/skyle/Documents/sqlite3_NHL2019.db")
+con=sqlite3.connect(config.dbpath)
 con.isolation_level = None
 cur=con.cursor()
 
